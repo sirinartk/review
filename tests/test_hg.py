@@ -1,4 +1,5 @@
 import copy
+import errno
 import imp
 import mock
 import os
@@ -288,3 +289,56 @@ def test_check_node(m_is_node, hg):
         hg.check_node(node)
 
     assert "" == str(e.value)
+
+
+@mock.patch("mozphab.os.unlink")
+def test_cleanup_unlink_error(m_unlink, hg):
+    hg.use_evolve = False
+    hg.unlink_obsstore = True
+    hg.obsstore = None
+    m_unlink.side_effect = OSError(errno.EPERM, "")
+    with pytest.raises(OSError):
+        hg.cleanup()
+
+    hg.strip_nodes = False
+    m_unlink.side_effect = OSError(errno.ENOENT, "")
+    assert hg.cleanup() is None
+
+
+def test_cleanup_strip_nodes(hg):
+    hg.hg = mock.Mock()
+    hg.use_evolve = True
+    hg.strip_nodes = ["node"]
+    hg.cleanup()
+    hg.hg.assert_called_once_with(["strip", "--hidden", "node"])
+    assert hg.strip_nodes == []
+
+
+def test_status(hg):
+    hg.status = None
+    hg.hg_out = mock.Mock()
+    hg.hg_out.return_value = ["? first"]
+    assert dict(U=["first"], T=[]) == hg._status()
+    hg.hg_out.assert_called_once()
+
+    hg.status = None
+    hg.hg_out.reset_mock()
+    hg.hg_out.return_value = [" second"]
+    assert dict(T=["second"], U=[]) == hg._status()
+    hg.hg_out.assert_called_once()
+
+    hg.hg_out.reset_mock()
+    assert dict(T=["second"], U=[]) == hg._status()
+    hg.hg_out.assert_not_called()
+
+
+def test_refresh_commit(hg):
+    commit = {}
+    hg._refresh_commit(commit, "node5678901234", "rev")
+    assert dict(node="node5678901234", name="rev:node56789012") == commit
+
+    hg.hg_out = mock.Mock()
+    hg.hg_out.return_value = "rev_no"
+    commit = {}
+    hg._refresh_commit(commit, "node5678901234")
+    assert dict(node="node5678901234", name="rev_no:node56789012") == commit

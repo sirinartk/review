@@ -27,7 +27,7 @@ def commit(bug_id=None, reviewers=None, body="", name="", title="", rev_id=None)
         "reviewers": reviewers_dict(reviewers),
         "body": body,
         "rev-id": rev_id,
-        "node": uuid.uuid4().get_hex(),
+        "node": uuid.uuid4().hex,
     }
 
 
@@ -530,12 +530,12 @@ class Commits(unittest.TestCase):
             [
                 {
                     "title": "A",
-                    "reviewers": dict(granted=["two", "three"], request=[]),
+                    "reviewers": dict(granted=["three", "two"], request=[]),
                     "bug-id": 2,
                 },
                 {
                     "title": "B",
-                    "reviewers": dict(granted=["two", "three"], request=[]),
+                    "reviewers": dict(granted=["three", "two"], request=[]),
                     "bug-id": 2,
                 },
             ],
@@ -555,12 +555,12 @@ class Commits(unittest.TestCase):
             [
                 {
                     "title": "A",
-                    "reviewers": dict(granted=["two!", "THREE!"], request=[]),
+                    "reviewers": dict(granted=["three!", "two!"], request=[]),
                     "bug-id": None,
                 },
                 {
                     "title": "B",
-                    "reviewers": dict(granted=["two!", "THREE!"], request=[]),
+                    "reviewers": dict(granted=["three!", "two!"], request=[]),
                     "bug-id": 1,
                 },
             ],

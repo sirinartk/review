@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 mozphab = imp.load_source(
-    "mozphab", os.path.join(os.path.dirname(__file__), os.path.pardir, "moz-phab")
+    "mozphab", os.path.join(os.path.dirname(__file__), "moz-phab")
 )
 
 
@@ -71,7 +71,7 @@ def hg(m_repository_phab_url, m_which, m_os_path, m_config, m_hg_hg_out, safe_en
 
 def hg_out(*args):
     args = ["hg"] + list(args)
-    return subprocess.check_output(args)
+    return subprocess.check_output(args, universal_newlines=True)
 
 
 @pytest.fixture
@@ -82,7 +82,7 @@ def hg_repo_path(monkeypatch, tmp_path):
     repo_path.mkdir()
     monkeypatch.chdir(str(repo_path))
     arcconfig = repo_path / ".arcconfig"
-    arcconfig.write_text(unicode(json.dumps({"phabricator.uri": phabricator_uri})))
+    arcconfig.write_text(json.dumps({"phabricator.uri": phabricator_uri}))
     hg_out("init")
     return repo_path
 
@@ -91,7 +91,7 @@ def git_out(*args):
     env = os.environ.copy()
     args = ["git"] + list(args)
     env["DEBUG"] = "1"
-    return subprocess.check_output(args, env=env)
+    return subprocess.check_output(args, env=env, universal_newlines=True)
 
 
 @pytest.fixture
@@ -102,7 +102,7 @@ def git_repo_path(monkeypatch, tmp_path):
     repo_path.mkdir()
     monkeypatch.chdir(str(repo_path))
     arcconfig = repo_path / ".arcconfig"
-    arcconfig.write_text(unicode(json.dumps({"phabricator.uri": phabricator_uri})))
+    arcconfig.write_text(json.dumps({"phabricator.uri": phabricator_uri}))
     git_out("init")
     git_out("add", ".")
     git_out("commit", "--message", "initial commit")
@@ -134,7 +134,7 @@ def in_process(monkeypatch, safe_environ, request):
     # to make test debugging easier.
     def reraise(*args, **kwargs):
         t, v, tb = sys.exc_info()
-        raise t, v, tb
+        raise t(v).with_traceback(tb)
 
     monkeypatch.setattr(sys, "exit", reraise)
 
